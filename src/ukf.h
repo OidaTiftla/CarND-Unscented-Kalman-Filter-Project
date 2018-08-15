@@ -31,8 +31,8 @@ public:
   ///* predicted sigma points matrix
   MatrixXd Xsig_pred_;
 
-  ///* time when the state is true, in us
-  long long time_us_;
+  ///* previous timestamp
+  long long previous_timestamp_;
 
   ///* Process noise standard deviation longitudinal acceleration in m/s^2
   double std_a_;
@@ -106,5 +106,10 @@ public:
    */
   void UpdateRadar(MeasurementPackage measurement_pack);
 };
+
+VectorXd h_radar_function(VectorXd x);
+VectorXd h_radar_function_inverse(VectorXd hx);
+VectorXd h_lidar_function(VectorXd x);
+VectorXd h_lidar_function_inverse(VectorXd hx);
 
 #endif /* UKF_H */
