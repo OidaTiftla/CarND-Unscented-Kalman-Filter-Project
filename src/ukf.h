@@ -41,19 +41,19 @@ public:
   double std_yawdd_;
 
   ///* Laser measurement noise standard deviation position1 in m
-  double std_laspx_;
+  double std_laser_px_;
 
   ///* Laser measurement noise standard deviation position2 in m
-  double std_laspy_;
+  double std_laser_py_;
 
   ///* Radar measurement noise standard deviation radius in m
-  double std_radr_;
+  double std_radar_rho_;
 
   ///* Radar measurement noise standard deviation angle in rad
-  double std_radphi_;
+  double std_radar_phi_;
 
   ///* Radar measurement noise standard deviation radius change in m/s
-  double std_radrd_ ;
+  double std_radar_rhod_;
 
   ///* Weights of sigma points
   VectorXd weights_;
