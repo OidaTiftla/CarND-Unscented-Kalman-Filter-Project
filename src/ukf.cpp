@@ -15,8 +15,8 @@ UKF::UKF() {
   // initially set to false, set to true in first call of ProcessMeasurement
   is_initialized_ = false;
 
-  // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
+  // if this is false, lidar measurements will be ignored (except during init)
+  use_lidar_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
@@ -38,10 +38,10 @@ UKF::UKF() {
 
   //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
   // Laser measurement noise standard deviation position1 in m
-  std_laser_px_ = 0.15;
+  std_lidar_px_ = 0.15;
 
   // Laser measurement noise standard deviation position2 in m
-  std_laser_py_ = 0.15;
+  std_lidar_py_ = 0.15;
 
   // Radar measurement noise standard deviation radius in m
   std_radar_rho_ = 0.3;
@@ -91,7 +91,7 @@ UKF::~UKF() {}
 
 /**
  * @param {MeasurementPackage} measurement_pack The latest measurement data of
- * either radar or laser.
+ * either radar or lidar.
  */
 void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
   /**
@@ -250,7 +250,7 @@ void UKF::Prediction(double dt) {
 }
 
 /**
- * Updates the state and the state covariance matrix using a laser measurement.
+ * Updates the state and the state covariance matrix using a lidar measurement.
  * @param {MeasurementPackage} measurement_pack
  */
 void UKF::UpdateLidar(MeasurementPackage measurement_pack) {

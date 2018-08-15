@@ -16,8 +16,8 @@ public:
   ///* initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
 
-  ///* if this is false, laser measurements will be ignored (except for init)
-  bool use_laser_;
+  ///* if this is false, lidar measurements will be ignored (except for init)
+  bool use_lidar_;
 
   ///* if this is false, radar measurements will be ignored (except for init)
   bool use_radar_;
@@ -41,10 +41,10 @@ public:
   double std_yawdd_;
 
   ///* Laser measurement noise standard deviation position1 in m
-  double std_laser_px_;
+  double std_lidar_px_;
 
   ///* Laser measurement noise standard deviation position2 in m
-  double std_laser_py_;
+  double std_lidar_py_;
 
   ///* Radar measurement noise standard deviation radius in m
   double std_radar_rho_;
@@ -83,7 +83,7 @@ public:
 
   /**
    * ProcessMeasurement
-   * @param measurement_pack The latest measurement data of either radar or laser
+   * @param measurement_pack The latest measurement data of either radar or lidar
    */
   void ProcessMeasurement(MeasurementPackage measurement_pack);
 
@@ -95,7 +95,7 @@ public:
   void Prediction(double dt);
 
   /**
-   * Updates the state and the state covariance matrix using a laser measurement
+   * Updates the state and the state covariance matrix using a lidar measurement
    * @param measurement_pack The measurement at k+1
    */
   void UpdateLidar(MeasurementPackage measurement_pack);
