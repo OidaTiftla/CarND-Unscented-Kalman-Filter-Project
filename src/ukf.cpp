@@ -184,6 +184,69 @@ void UKF::Prediction(double dt) {
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
+
+	//create augmented mean vector
+	VectorXd x_aug = VectorXd(n_aug_);
+
+	//create augmented state covariance
+	MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
+
+	//create sigma point matrix
+	MatrixXd Xsig_aug = MatrixXd(n_aug_, n_sigma_);
+
+	//create augmented mean state
+	x_aug.setZero();
+	x_aug.head(n_x_) = x_;
+
+	//create augmented covariance matrix
+	P_aug.setZero();
+	P_aug.topLeftCorner(n_x_, n_x_) = P_;
+	P_aug(n_x_ + 0, n_x_ + 0) = std_a_ * std_a_;
+	P_aug(n_x_ + 1, n_x_ + 1) = std_yawdd_ * std_yawdd_;
+
+	//create square root matrix
+	MatrixXd P_aug_sqrt = P_aug.llt().matrixL();
+
+	//create augmented sigma points
+
+	// first point
+	Xsig_aug.col(0) = x_aug;
+
+	// other points
+	double factor = lambda_ + n_aug_;
+	MatrixXd sigma_points = sqrt(factor) * P_aug_sqrt;
+
+	for (int i = 0; i < n_aug_; ++i) {
+		Xsig_aug.col(i + 1) = x_aug + sigma_points.col(i);
+		Xsig_aug.col(i + 1 + n_aug_) = x_aug - sigma_points.col(i);
+	}
+
+	//predict sigma points
+	for (int i = 0; i < n_sigma_; ++i) {
+		Xsig_pred_.col(i) = f_process_model_function(Xsig_aug.col(i).head(n_x_), Xsig_aug.col(i).bottomRows(n_aug_ - n_x_), dt);
+	}
+
+	//predict state mean
+	x_.setZero();
+	for (int i = 0; i < n_sigma_; ++i) {
+		x_ += weights_[i] * Xsig_pred_.col(i);
+	}
+
+	//predict state covariance matrix
+	P_.setZero();
+	for (int i = 0; i < n_sigma_; ++i) {
+		VectorXd Xi_minus_x = Xsig_pred_.col(i) - x_;
+
+		//angle normalization because of difference calculation above
+		while (Xi_minus_x(3) > M_PI) {
+			Xi_minus_x(3) -= 2. * M_PI;
+		}
+		while (Xi_minus_x(3) < -M_PI) {
+			Xi_minus_x(3) += 2. * M_PI;
+		}
+
+		P_ += weights_[i] * (Xi_minus_x * Xi_minus_x.transpose());
+	}
 }
 
 /**
@@ -225,7 +288,7 @@ VectorXd h_radar_function(VectorXd x) {
 
   double rho = sqrt(p_x*p_x + p_y*p_y);
   double theta = atan2(p_y, p_x);
-  double rho_dot = v * cos(yaw - theta);
+  double rho_dot = v * cos(yaw - theta); // or: = (p_x * std::cos(yaw) * v + p_y * std::sin(yaw) * v) / sqrt(p_x*p_x + p_y*p_y);
 
   VectorXd result(3);
   result << rho, theta, rho_dot;
@@ -264,4 +327,39 @@ VectorXd h_lidar_function_inverse(VectorXd hx) {
   VectorXd result(5);
   result << p_x, p_y, 0, 0, 0;
   return result;
+}
+
+VectorXd f_process_model_function(VectorXd x, VectorXd nu, double dt) {
+	double p_x = x[0];
+	double p_y = x[1];
+	double v = x[2];
+	double yaw = x[3];
+	double yawd = x[4];
+
+	double nu_a = nu[0];
+	double nu_yawdd = nu[1];
+
+	//avoid division by zero
+	if (std::abs(yawd) < 0.0000001) {
+		// yaw rate is zero
+		x[0] += v * std::cos(yaw) * dt;
+		x[1] += v * std::sin(yaw) * dt;
+	} else {
+		// yaw rate is not zero
+		double yaw_delta = yawd * dt;
+		x[0] += v / yawd * (std::sin(yaw + yaw_delta) - std::sin(yaw));
+		x[1] += v / yawd * (-std::cos(yaw + yaw_delta) + std::cos(yaw));
+	}
+	x[2] += 0;
+	x[3] += yawd * dt;
+	x[4] += 0;
+
+	// add noise
+	double dt_squared_half = 0.5 * dt * dt;
+	x[0] += dt_squared_half * std::cos(yaw) * nu_a;
+	x[1] += dt_squared_half * std::sin(yaw) * nu_a;
+	x[2] += dt * nu_a;
+	x[3] += dt_squared_half * nu_yawdd;
+	x[4] += dt * nu_yawdd;
+	return x;
 }

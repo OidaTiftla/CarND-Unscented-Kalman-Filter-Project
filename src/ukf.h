@@ -111,5 +111,6 @@ VectorXd h_radar_function(VectorXd x);
 VectorXd h_radar_function_inverse(VectorXd hx);
 VectorXd h_lidar_function(VectorXd x);
 VectorXd h_lidar_function_inverse(VectorXd hx);
+VectorXd f_process_model_function(VectorXd x, VectorXd nu, double dt);
 
 #endif /* UKF_H */
