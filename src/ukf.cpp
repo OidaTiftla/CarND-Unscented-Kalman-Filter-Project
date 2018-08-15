@@ -84,7 +84,7 @@ UKF::UKF() {
 	}
 
   // predicted sigma points matrix
-  Xsig_pred_ = MatrixXd(n_aug_, n_sigma_);
+  Xsig_pred_ = MatrixXd(n_x_, n_sigma_);
 }
 
 UKF::~UKF() {}
