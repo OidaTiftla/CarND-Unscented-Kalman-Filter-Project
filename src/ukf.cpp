@@ -262,6 +262,102 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
 
   You'll also need to calculate the lidar NIS.
   */
+
+	//set measurement dimension, lidar can measure p_x and p_y
+	int n_z = 2;
+
+	//create matrix for sigma points in measurement space
+	MatrixXd Zsig = MatrixXd(n_z, n_sigma_);
+
+	//mean predicted measurement
+	VectorXd z_pred = VectorXd(n_z);
+
+	//measurement covariance matrix S
+	MatrixXd S = MatrixXd(n_z, n_z);
+
+	//transform sigma points into measurement space
+	for (int i = 0; i < n_sigma_; ++i) {
+		Zsig.col(i) = h_lidar_function(Xsig_pred_.col(i)); // + 0: mean of measurement noise
+	}
+
+	//calculate mean predicted measurement
+	z_pred.setZero();
+	for (int i = 0; i < n_sigma_; ++i) {
+		z_pred += weights_[i] * Zsig.col(i);
+	}
+
+	//calculate innovation covariance matrix S
+	S.setZero();
+	for (int i = 0; i < n_sigma_; ++i) {
+		VectorXd Zi_minus_z_pred = Zsig.col(i) - z_pred;
+
+		//angle normalization because of difference calculation above
+		while (Zi_minus_z_pred(1) > M_PI) {
+			Zi_minus_z_pred(1) -= 2. * M_PI;
+		}
+		while (Zi_minus_z_pred(1) < -M_PI) {
+			Zi_minus_z_pred(1) += 2. * M_PI;
+		}
+
+		S += weights_[i] * (Zi_minus_z_pred * Zi_minus_z_pred.transpose());
+	}
+	//add measurement noise covariance matrix
+	MatrixXd R = MatrixXd(n_z, n_z);
+	R.setZero();
+	R(0, 0) = std_lidar_px_ * std_lidar_px_;
+	R(1, 1) = std_lidar_py_ * std_lidar_py_;
+	S += R;
+
+  //sensor measurement
+  VectorXd z = measurement_pack.raw_measurements_;
+
+	//create matrix for cross correlation Tc
+	MatrixXd Tc = MatrixXd(n_x_, n_z);
+
+	//calculate cross correlation matrix
+	Tc.setZero();
+	for (int i = 0; i < n_sigma_; ++i) {
+		// state difference
+		VectorXd Xi_minus_x = Xsig_pred_.col(i) - x_;
+		//angle normalization because of difference calculation above
+		while (Xi_minus_x(3) > M_PI) {
+			Xi_minus_x(3) -= 2. * M_PI;
+		}
+		while (Xi_minus_x(3) < -M_PI) {
+			Xi_minus_x(3) += 2. * M_PI;
+		}
+
+		//residual
+		VectorXd Zi_minus_z_pred = Zsig.col(i) - z_pred;
+		//angle normalization because of difference calculation above
+		while (Zi_minus_z_pred(1) > M_PI) {
+			Zi_minus_z_pred(1) -= 2. * M_PI;
+		}
+		while (Zi_minus_z_pred(1) < -M_PI) {
+			Zi_minus_z_pred(1) += 2. * M_PI;
+		}
+
+		Tc += weights_[i] * (Xi_minus_x * Zi_minus_z_pred.transpose());
+	}
+
+	//calculate Kalman gain K
+	MatrixXd K = Tc * S.inverse();
+
+	//residual
+	VectorXd z_minus_z_pred = z - z_pred;
+	//angle normalization because of difference calculation above
+	while (z_minus_z_pred(1) > M_PI) {
+		z_minus_z_pred(1) -= 2. * M_PI;
+	}
+	while (z_minus_z_pred(1) < -M_PI) {
+		z_minus_z_pred(1) += 2. * M_PI;
+	}
+
+	//update state mean and covariance matrix
+	x_ += K * z_minus_z_pred;
+	P_ -= K * S * K.transpose();
+
+  // ToDo: calculate the lidar NIS
 }
 
 /**
