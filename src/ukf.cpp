@@ -12,6 +12,9 @@ using std::vector;
  * This is scaffolding, do not modify
  */
 UKF::UKF() {
+  // initially set to false, set to true in first call of ProcessMeasurement
+  is_initialized_ = false;
+
   // if this is false, laser measurements will be ignored (except during init)
   use_laser_ = true;
 
@@ -23,6 +26,9 @@ UKF::UKF() {
 
   // initial covariance matrix
   P_ = MatrixXd(5, 5);
+
+  // time when the state is true, in us
+  time_us_ = 0;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
@@ -54,6 +60,31 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
+
+  // State dimension
+  n_x_ = 5;
+
+  // Augmented state dimension
+  n_aug_ = n_x_ + 2;
+
+  // number of sigma points
+  n_sigma_ = 2 * n_aug_ + 1;
+
+  // Sigma point spreading parameter
+  lambda_ = 3 - n_aug_;
+
+  // Weights of sigma points
+  weights_ = VectorXd(n_sigma_);
+	for (int i = 0; i < n_sigma_; ++i) {
+		if (i == 0) {
+			weights_[i] = lambda_ / (lambda_ + n_aug_);
+		} else {
+			weights_[i] = 0.5 / (lambda_ + n_aug_);
+		}
+	}
+
+  // predicted sigma points matrix
+  Xsig_pred_ = MatrixXd(n_aug_, n_sigma_);
 }
 
 UKF::~UKF() {}
