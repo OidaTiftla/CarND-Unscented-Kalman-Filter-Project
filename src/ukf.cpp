@@ -170,6 +170,10 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
     // Laser updates
     UpdateLidar(measurement_pack);
   }
+
+  // print the output
+  cout << "x_ = " << x_ << endl;
+  cout << "P_ = " << P_ << endl;
 }
 
 /**
