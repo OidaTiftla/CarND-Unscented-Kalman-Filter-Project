@@ -295,14 +295,6 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
   for (int i = 0; i < n_sigma_; ++i) {
     VectorXd Zi_minus_z_pred = Zsig.col(i) - z_pred;
 
-    //angle normalization because of difference calculation above
-    while (Zi_minus_z_pred(1) > M_PI) {
-      Zi_minus_z_pred(1) -= 2. * M_PI;
-    }
-    while (Zi_minus_z_pred(1) < -M_PI) {
-      Zi_minus_z_pred(1) += 2. * M_PI;
-    }
-
     S += weights_[i] * (Zi_minus_z_pred * Zi_minus_z_pred.transpose());
   }
   //add measurement noise covariance matrix
@@ -333,13 +325,6 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
 
     //residual
     VectorXd Zi_minus_z_pred = Zsig.col(i) - z_pred;
-    //angle normalization because of difference calculation above
-    while (Zi_minus_z_pred(1) > M_PI) {
-      Zi_minus_z_pred(1) -= 2. * M_PI;
-    }
-    while (Zi_minus_z_pred(1) < -M_PI) {
-      Zi_minus_z_pred(1) += 2. * M_PI;
-    }
 
     Tc += weights_[i] * (Xi_minus_x * Zi_minus_z_pred.transpose());
   }
@@ -349,13 +334,6 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
 
   //residual
   VectorXd z_minus_z_pred = z - z_pred;
-  //angle normalization because of difference calculation above
-  while (z_minus_z_pred(1) > M_PI) {
-    z_minus_z_pred(1) -= 2. * M_PI;
-  }
-  while (z_minus_z_pred(1) < -M_PI) {
-    z_minus_z_pred(1) += 2. * M_PI;
-  }
 
   //update state mean and covariance matrix
   x_ += K * z_minus_z_pred;
