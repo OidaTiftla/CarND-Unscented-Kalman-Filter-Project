@@ -85,6 +85,18 @@ UKF::UKF() {
 
   // predicted sigma points matrix
   Xsig_pred_ = MatrixXd(n_x_, n_sigma_);
+
+  // NIS (normalized innovation squared) for lidar
+  nis_lidar_ = std::vector<double>();
+
+  // 95% NIS (normalized innovation squared) for lidar
+  nis_lidar_95_ = 5.991;
+
+  // NIS (normalized innovation squared) for radar
+  nis_radar_ = std::vector<double>();
+
+  // 95% NIS (normalized innovation squared) for radar
+  nis_radar_95_ = 7.815;
 }
 
 UKF::~UKF() {}
@@ -330,7 +342,8 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
   }
 
   //calculate Kalman gain K
-  MatrixXd K = Tc * S.inverse();
+  MatrixXd Si = S.inverse();
+  MatrixXd K = Tc * Si;
 
   //residual
   VectorXd z_minus_z_pred = z - z_pred;
@@ -339,7 +352,12 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
   x_ += K * z_minus_z_pred;
   P_ -= K * S * K.transpose();
 
-  // ToDo: calculate the lidar NIS
+  //calculate the NIS (normalized innovation squared)
+  double epsilon = z_minus_z_pred.transpose() * Si * z_minus_z_pred;
+  nis_lidar_.push_back(epsilon);
+  int n_below = std::count_if(nis_lidar_.begin(), nis_lidar_.end(), [this](double nis){ return nis < nis_lidar_95_; });
+  double percent_below = n_below * 100. / nis_lidar_.size();
+  std::cout << "NIS lidar percent below: " << percent_below << std::endl;
 }
 
 /**
@@ -435,7 +453,8 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
   }
 
   //calculate Kalman gain K
-  MatrixXd K = Tc * S.inverse();
+  MatrixXd Si = S.inverse();
+  MatrixXd K = Tc * Si;
 
   //residual
   VectorXd z_minus_z_pred = z - z_pred;
@@ -451,7 +470,12 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
   x_ += K * z_minus_z_pred;
   P_ -= K * S * K.transpose();
 
-  // ToDo: calculate the radar NIS
+  //calculate the NIS (normalized innovation squared)
+  double epsilon = z_minus_z_pred.transpose() * Si * z_minus_z_pred;
+  nis_radar_.push_back(epsilon);
+  int n_below = std::count_if(nis_radar_.begin(), nis_radar_.end(), [this](double nis){ return nis < nis_radar_95_; });
+  double percent_below = n_below * 100. / nis_radar_.size();
+  std::cout << "NIS radar percent below: " << percent_below << std::endl;
 }
 
 VectorXd h_radar_function(VectorXd x) {

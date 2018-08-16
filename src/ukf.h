@@ -70,6 +70,18 @@ public:
   ///* Sigma point spreading parameter
   double lambda_;
 
+  ///* NIS (normalized innovation squared) for lidar
+  std::vector<double> nis_lidar_;
+
+  ///* 95% NIS (normalized innovation squared) for lidar
+  double nis_lidar_95_;
+
+  ///* NIS (normalized innovation squared) for radar
+  std::vector<double> nis_radar_;
+
+  ///* 95% NIS (normalized innovation squared) for radar
+  double nis_radar_95_;
+
 
   /**
    * Constructor
