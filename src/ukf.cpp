@@ -31,10 +31,10 @@ UKF::UKF() {
   previous_timestamp_ = 0;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 4;
+  std_a_ = 4; // my review recommended values from 1 to 3
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = M_PI_2;
+  std_yawdd_ = M_PI_2; // my review recommended values between 0 and 1
 
   //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
   // Laser measurement noise standard deviation position1 in m
@@ -161,7 +161,7 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
    */
 
   //compute the time elapsed between the current and previous measurements
-  float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
+  const float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
   previous_timestamp_ = measurement_pack.timestamp_;
 
   Prediction(dt);
@@ -217,11 +217,12 @@ void UKF::Prediction(double dt) {
   //create augmented covariance matrix
   P_aug.setZero();
   P_aug.topLeftCorner(n_x_, n_x_) = P_;
+  // ToDo: reviewer recommended to prepare this part of the matrix (the Q matrix) in the constructor
   P_aug(n_x_ + 0, n_x_ + 0) = std_a_ * std_a_;
   P_aug(n_x_ + 1, n_x_ + 1) = std_yawdd_ * std_yawdd_;
 
   //create square root matrix
-  MatrixXd P_aug_sqrt = P_aug.llt().matrixL();
+  const MatrixXd P_aug_sqrt = P_aug.llt().matrixL();
 
   //create augmented sigma points
 
@@ -229,8 +230,8 @@ void UKF::Prediction(double dt) {
   Xsig_aug.col(0) = x_aug;
 
   // other points
-  double factor = lambda_ + n_aug_;
-  MatrixXd sigma_points = sqrt(factor) * P_aug_sqrt;
+  const double factor = lambda_ + n_aug_;
+  const MatrixXd sigma_points = sqrt(factor) * P_aug_sqrt;
 
   for (int i = 0; i < n_aug_; ++i) {
     Xsig_aug.col(i + 1) = x_aug + sigma_points.col(i);
@@ -279,8 +280,11 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
   You'll also need to calculate the lidar NIS.
   */
 
+  // ToDo: The reviewer told me, for Lidar I can still use the linear kalman filter
+  // equations. This saves computaional burden.
+
   //set measurement dimension, lidar can measure p_x and p_y
-  int n_z = 2;
+  const int n_z = 2;
 
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, n_sigma_);
@@ -310,6 +314,7 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
     S += weights_[i] * (Zi_minus_z_pred * Zi_minus_z_pred.transpose());
   }
   //add measurement noise covariance matrix
+  // ToDo: the reviewer recommended to prepare this matrix in the constructor, because it does not change
   MatrixXd R = MatrixXd(n_z, n_z);
   R.setZero();
   R(0, 0) = std_lidar_px_ * std_lidar_px_;
@@ -317,7 +322,7 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
   S += R;
 
   //sensor measurement
-  VectorXd z = measurement_pack.raw_measurements_;
+  const VectorXd z = measurement_pack.raw_measurements_;
 
   //create matrix for cross correlation Tc
   MatrixXd Tc = MatrixXd(n_x_, n_z);
@@ -336,27 +341,27 @@ void UKF::UpdateLidar(MeasurementPackage measurement_pack) {
     }
 
     //residual
-    VectorXd Zi_minus_z_pred = Zsig.col(i) - z_pred;
+    const VectorXd Zi_minus_z_pred = Zsig.col(i) - z_pred;
 
     Tc += weights_[i] * (Xi_minus_x * Zi_minus_z_pred.transpose());
   }
 
   //calculate Kalman gain K
-  MatrixXd Si = S.inverse();
-  MatrixXd K = Tc * Si;
+  const MatrixXd Si = S.inverse();
+  const MatrixXd K = Tc * Si;
 
   //residual
-  VectorXd z_minus_z_pred = z - z_pred;
+  const VectorXd z_minus_z_pred = z - z_pred;
 
   //update state mean and covariance matrix
   x_ += K * z_minus_z_pred;
   P_ -= K * S * K.transpose();
 
   //calculate the NIS (normalized innovation squared)
-  double epsilon = z_minus_z_pred.transpose() * Si * z_minus_z_pred;
+  const double epsilon = z_minus_z_pred.transpose() * Si * z_minus_z_pred;
   nis_lidar_.push_back(epsilon);
-  int n_below = std::count_if(nis_lidar_.begin(), nis_lidar_.end(), [this](double nis){ return nis < nis_lidar_95_; });
-  double percent_below = n_below * 100. / nis_lidar_.size();
+  const int n_below = std::count_if(nis_lidar_.begin(), nis_lidar_.end(), [this](double nis){ return nis < nis_lidar_95_; });
+  const double percent_below = n_below * 100. / nis_lidar_.size();
   std::cout << "NIS lidar percent below: " << percent_below << std::endl;
 }
 
@@ -375,7 +380,7 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
   */
 
   //set measurement dimension, radar can measure rho, phi, and rho_dot
-  int n_z = 3;
+  const int n_z = 3;
 
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, n_sigma_);
@@ -413,6 +418,7 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
     S += weights_[i] * (Zi_minus_z_pred * Zi_minus_z_pred.transpose());
   }
   //add measurement noise covariance matrix
+  // ToDo: the reviewer recommended to prepare this matrix in the constructor, because it does not change
   MatrixXd R = MatrixXd(n_z, n_z);
   R.setZero();
   R(0, 0) = std_radar_rho_ * std_radar_rho_;
@@ -421,7 +427,7 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
   S += R;
 
   //sensor measurement
-  VectorXd z = measurement_pack.raw_measurements_;
+  const VectorXd z = measurement_pack.raw_measurements_;
 
   //create matrix for cross correlation Tc
   MatrixXd Tc = MatrixXd(n_x_, n_z);
@@ -453,8 +459,8 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
   }
 
   //calculate Kalman gain K
-  MatrixXd Si = S.inverse();
-  MatrixXd K = Tc * Si;
+  const MatrixXd Si = S.inverse();
+  const MatrixXd K = Tc * Si;
 
   //residual
   VectorXd z_minus_z_pred = z - z_pred;
@@ -471,72 +477,72 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
   P_ -= K * S * K.transpose();
 
   //calculate the NIS (normalized innovation squared)
-  double epsilon = z_minus_z_pred.transpose() * Si * z_minus_z_pred;
+  const double epsilon = z_minus_z_pred.transpose() * Si * z_minus_z_pred;
   nis_radar_.push_back(epsilon);
-  int n_below = std::count_if(nis_radar_.begin(), nis_radar_.end(), [this](double nis){ return nis < nis_radar_95_; });
-  double percent_below = n_below * 100. / nis_radar_.size();
+  const int n_below = std::count_if(nis_radar_.begin(), nis_radar_.end(), [this](double nis){ return nis < nis_radar_95_; });
+  const double percent_below = n_below * 100. / nis_radar_.size();
   std::cout << "NIS radar percent below: " << percent_below << std::endl;
 }
 
-VectorXd h_radar_function(VectorXd x) {
-  double p_x = x(0);
-  double p_y = x(1);
-  double v = x(2);
-  double yaw = x(3);
-  double yawd = x(4);
+VectorXd h_radar_function(const VectorXd x) {
+  const double p_x = x(0);
+  const double p_y = x(1);
+  const double v = x(2);
+  const double yaw = x(3);
+  // const double yawd = x(4);
 
-  double rho = sqrt(p_x*p_x + p_y*p_y);
-  double theta = atan2(p_y, p_x);
-  double rho_dot = v * cos(yaw - theta); // or: = (p_x * std::cos(yaw) * v + p_y * std::sin(yaw) * v) / sqrt(p_x*p_x + p_y*p_y);
+  const double rho = sqrt(p_x*p_x + p_y*p_y);
+  const double theta = atan2(p_y, p_x);
+  const double rho_dot = v * cos(yaw - theta); // or: = (p_x * std::cos(yaw) * v + p_y * std::sin(yaw) * v) / sqrt(p_x*p_x + p_y*p_y);
 
   VectorXd result(3);
   result << rho, theta, rho_dot;
   return result;
 }
 
-VectorXd h_radar_function_inverse(VectorXd hx) {
-  double rho = hx(0);
-  double theta = hx(1);
-  double rho_dot = hx(2);
+VectorXd h_radar_function_inverse(const VectorXd hx) {
+  const double rho = hx(0);
+  const double theta = hx(1);
+  // const double rho_dot = hx(2);
 
-  double p_x = rho * cos(theta);
-  double p_y = rho * sin(theta);
+  const double p_x = rho * cos(theta);
+  const double p_y = rho * sin(theta);
 
   VectorXd result(5);
   result << p_x, p_y, 0, 0, 0;
   return result;
 }
 
-VectorXd h_lidar_function(VectorXd x) {
-  double p_x = x(0);
-  double p_y = x(1);
-  double v = x(2);
-  double yaw = x(3);
-  double yawd = x(4);
+VectorXd h_lidar_function(const VectorXd x) {
+  const double p_x = x(0);
+  const double p_y = x(1);
+  // const double v = x(2);
+  // const double yaw = x(3);
+  // const double yawd = x(4);
 
   VectorXd result(2);
   result << p_x, p_y;
   return result;
 }
 
-VectorXd h_lidar_function_inverse(VectorXd hx) {
-  double p_x = hx(0);
-  double p_y = hx(1);
+VectorXd h_lidar_function_inverse(const VectorXd hx) {
+  const double p_x = hx(0);
+  const double p_y = hx(1);
 
   VectorXd result(5);
   result << p_x, p_y, 0, 0, 0;
   return result;
 }
 
-VectorXd f_process_model_function(VectorXd x, VectorXd nu, double dt) {
-  double p_x = x[0];
-  double p_y = x[1];
-  double v = x[2];
-  double yaw = x[3];
-  double yawd = x[4];
+VectorXd f_process_model_function(VectorXd x, const VectorXd nu, const double dt) {
+  // const double p_x = x[0];
+  // const double p_y = x[1];
+  const double v = x[2];
+  const double yaw = x[3];
+  const double yawd = x[4];
 
-  double nu_a = nu[0];
-  double nu_yawdd = nu[1];
+  const double nu_a = nu[0];
+  const double nu_yawdd = nu[1];
 
   //avoid division by zero
   if (std::abs(yawd) < 0.0000001) {
@@ -545,7 +551,7 @@ VectorXd f_process_model_function(VectorXd x, VectorXd nu, double dt) {
     x[1] += v * std::sin(yaw) * dt;
   } else {
     // yaw rate is not zero
-    double yaw_delta = yawd * dt;
+    const double yaw_delta = yawd * dt;
     x[0] += v / yawd * (std::sin(yaw + yaw_delta) - std::sin(yaw));
     x[1] += v / yawd * (-std::cos(yaw + yaw_delta) + std::cos(yaw));
   }
@@ -554,7 +560,7 @@ VectorXd f_process_model_function(VectorXd x, VectorXd nu, double dt) {
   x[4] += 0;
 
   // add noise
-  double dt_squared_half = 0.5 * dt * dt;
+  const double dt_squared_half = 0.5 * dt * dt;
   x[0] += dt_squared_half * std::cos(yaw) * nu_a;
   x[1] += dt_squared_half * std::sin(yaw) * nu_a;
   x[2] += dt * nu_a;
